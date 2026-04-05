@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+﻿from fastapi import FastAPI
 from pydantic import BaseModel, Field
 import joblib
 import numpy as np
@@ -25,8 +25,8 @@ class PredictionOutput(BaseModel):
     recommendation: str
 
 def get_risk_level(prob):
-    if prob < 0.3: return "LOW"
-    elif prob < 0.6: return "MEDIUM"
+    if prob < 0.25: return "LOW"
+    elif prob < 0.4: return "MEDIUM"
     else: return "HIGH"
 
 def get_recommendation(risk, data):
