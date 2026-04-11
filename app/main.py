@@ -1,14 +1,15 @@
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from pydantic import BaseModel, Field
 import joblib
 import numpy as np
+import os
 
 app = FastAPI(title="Gym Injury Risk Predictor")
 
-templates = Jinja2Templates(directory="app/templates")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 model = joblib.load("model/model.pkl")
 scaler = joblib.load("model/scaler.pkl")
