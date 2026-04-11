@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Injury Risk Predictor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; min-height: 100vh; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 15px; text-align: center; margin-bottom: 30px; }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header p { font-size: 16px; opacity: 0.9; }
+        .form-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group label { font-size: 14px; font-weight: bold; color: #333; margin-bottom: 8px; }
+        .form-group input, .form-group select { padding: 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 15px; transition: border-color 0.3s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; }
+        .btn { width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: transform 0.2s; }
+        .btn:hover { transform: translateY(-2px); }
+        .result { display: none; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); text-align: center; }
+        .risk-badge { display: inline-block; padding: 15px 40px; border-radius: 50px; font-size: 24px; font-weight: bold; margin: 20px 0; }
+        .LOW { background: #d4edda; color: #155724; }
+        .MEDIUM { background: #fff3cd; color: #856404; }
+        .HIGH { background: #f8d7da; color: #721c24; }
+        .probability { font-size: 18px; color: #666; margin-bottom: 15px; }
+        .recommendation { background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: left; font-size: 15px; line-height: 1.6; color: #333; border-left: 4px solid #667eea; }
+        .loading { display: none; text-align: center; padding: 20px; font-size: 18px; color: #667eea; }
+        .section-title { font-size: 20px; font-weight: bold; color: #333; margin-bottom: 20px; border-bottom: 2px solid #667eea; padding-bottom: 10px; }
+        @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏋️ Gym Injury Risk Predictor</h1>
+            <p>Enter your workout details to check your injury risk before training</p>
+        </div>
+        <div class="form-card">
+            <div class="section-title">Your Details</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Age (years)</label>
+                    <input type="number" id="age" placeholder="e.g. 25" min="16" max="100">
+                </div>
+                <div class="form-group">
+                    <label>BMI</label>
+                    <input type="number" id="bmi" placeholder="e.g. 22.5" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Experience (years)</label>
+                    <input type="number" id="experience_years" placeholder="e.g. 2.5" step="0.1">
+                </div>
+                <div class="form-group">
+                    <label>Weight Lifted (kg)</label>
+                    <input type="number" id="weight_lifted_kg" placeholder="e.g. 80" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>Sets</label>
+                    <input type="number" id="sets" placeholder="e.g. 3" min="1" max="20">
+                </div>
+                <div class="form-group">
+                    <label>Reps</label>
+                    <input type="number" id="reps" placeholder="e.g. 10" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label>Rest Days Since Last Session</label>
+                    <input type="number" id="rest_days" placeholder="e.g. 2" min="0" max="14">
+                </div>
+                <div class="form-group">
+                    <label>Sleep Hours Last Night</label>
+                    <input type="number" id="sleep_hours" placeholder="e.g. 7.5" step="0.5">
+                </div>
+                <div class="form-group">
+                    <label>Did You Warm Up?</label>
+                    <select id="warm_up_done">
+                        <option value="">Select...</option>
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Past Injury History?</label>
+                    <select id="past_injury">
+                        <option value="">Select...</option>
+                        <option value="1">Yes</option>
+                        <option value="0">No</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn" onclick="predict()">Check My Injury Risk</button>
+        </div>
+        <div class="loading" id="loading">Analyzing your workout... Please wait...</div>
+        <div class="result" id="result">
+            <div class="section-title">Your Risk Assessment</div>
+            <div class="probability" id="probability"></div>
+            <div class="risk-badge" id="risk-badge"></div>
+            <div class="recommendation" id="recommendation"></div>
+            <button class="btn" onclick="reset()" style="margin-top:20px">Check Again</button>
+        </div>
+    </div>
+    <script>
+        async function predict() {
+            const fields = ['age','bmi','experience_years','weight_lifted_kg','sets','reps','rest_days','sleep_hours','warm_up_done','past_injury'];
+            const data = {};
+            for (let f of fields) {
+                const val = document.getElementById(f).value;
+                if (val === '' || val === null) { alert('Please fill all fields!'); return; }
+                data[f] = parseFloat(val);
+            }
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('probability').innerHTML = 'Injury Risk Probability: <strong>' + (result.injury_risk_probability * 100).toFixed(1) + '%</strong>';
+                const badge = document.getElementById('risk-badge');
+                badge.textContent = result.risk_level + ' RISK';
+                badge.className = 'risk-badge ' + result.risk_level;
+                document.getElementById('recommendation').textContent = result.recommendation;
+                document.getElementById('result').style.display = 'block';
+            } catch(e) {
+                document.getElementById('loading').style.display = 'none';
+                alert('Error connecting to server. Please try again.');
+            }
+        }
+        function reset() {
+            document.getElementById('result').style.display = 'none';
+            document.querySelectorAll('input').forEach(i => i.value = '');
+            document.querySelectorAll('select').forEach(s => s.value = '');
+        }
+    </script>
+</body>
+</html>

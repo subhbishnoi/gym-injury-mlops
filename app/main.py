@@ -1,11 +1,19 @@
-﻿from fastapi import FastAPI
+from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.requests import Request
 from pydantic import BaseModel, Field
 import joblib
 import numpy as np
 
-app = FastAPI()
+app = FastAPI(title="Gym Injury Risk Predictor")
+
+templates = Jinja2Templates(directory="app/templates")
+
 model = joblib.load("model/model.pkl")
 scaler = joblib.load("model/scaler.pkl")
+
+print("Model loaded!")
 
 class WorkoutInput(BaseModel):
     age: int = Field(..., ge=16, le=100)
@@ -30,21 +38,24 @@ def get_risk_level(prob):
     else: return "HIGH"
 
 def get_recommendation(risk, data):
-    if risk == "LOW": return "Safe to train!"
-    elif risk == "MEDIUM": return "Moderate risk. Reduce weight and warm up."
-    tips = []
-    if data.weight_lifted_kg > 100: tips.append("reduce weight")
-    if data.rest_days < 2: tips.append("rest 2 more days")
-    if data.warm_up_done == 0: tips.append("do a warm-up")
-    if data.sleep_hours < 7: tips.append("sleep more")
-    if data.past_injury == 1: tips.append("see a physio")
-    return "HIGH RISK! Please: " + ", ".join(tips) + "."
+    if risk == "LOW": return "Safe to train! Maintain good form and stay hydrated."
+    elif risk == "MEDIUM": return "Moderate risk. Reduce weight by 10-15 percent, warm up properly, sleep 7+ hrs."
+    else:
+        tips = []
+        if data.weight_lifted_kg > 100: tips.append("reduce weight significantly")
+        if data.rest_days < 2: tips.append("rest at least 2 more days")
+        if data.warm_up_done == 0: tips.append("always do a warm-up")
+        if data.sleep_hours < 7: tips.append("improve your sleep to 7-8 hours")
+        if data.past_injury == 1: tips.append("consult a physiotherapist")
+        return "HIGH RISK! Please: " + ", ".join(tips) + "."
 
 @app.get("/")
-def home(): return {"message": "API running! Visit /docs"}
+async def home(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/health")
-def health(): return {"status": "healthy"}
+def health():
+    return {"status": "healthy"}
 
 @app.post("/predict", response_model=PredictionOutput)
 def predict(data: WorkoutInput):
