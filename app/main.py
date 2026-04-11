@@ -13,7 +13,6 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 model = joblib.load("model/model.pkl")
 scaler = joblib.load("model/scaler.pkl")
-
 print("Model loaded!")
 
 class WorkoutInput(BaseModel):
@@ -52,7 +51,7 @@ def get_recommendation(risk, data):
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 @app.get("/health")
 def health():
