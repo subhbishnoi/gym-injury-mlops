@@ -1,7 +1,7 @@
 FROM python:3.11-slim
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir fastapi uvicorn scikit-learn joblib numpy pandas
+RUN pip install --no-cache-dir fastapi uvicorn scikit-learn joblib numpy pandas jinja2 python-multipart
 COPY . .
 RUN python model/train_model.py
 EXPOSE 8000
